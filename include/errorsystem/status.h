@@ -21,12 +21,12 @@ namespace errorsystem {
  * @brief A utility class which is used to express the state of operations.
  *
  * @code{.cpp}
- *   osquery::Status foobar() {
+ *   errorsystem::Status foobar() {
  *     auto na = doSomeWork();
  *     if (na->itWorked()) {
- *       return osquery::Status(0, "OK");
+ *       return errorsystem::Status(0, "OK");
  *     } else {
- *       return osquery::Status(1, na->getErrorString());
+ *       return errorsystem::Status(1, na->getErrorString());
  *     }
  *   }
  * @endcode
