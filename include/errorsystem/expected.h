@@ -16,8 +16,7 @@
 
 #include "errorsystem/error.h"
 
-#include <boost/blank.hpp>
-#include <boost/variant.hpp>
+#include <variant>
 
 #include "errorsystem/debug_only.h"
 
@@ -76,27 +75,33 @@ class Expected final {
 public:
     using ValueType = ValueType_;
     using ErrorType = Error<ErrorCodeEnumType>;
-    using SelfType  = Expected<ValueType, ErrorCodeEnumType>;
+    using SelfType = Expected<ValueType, ErrorCodeEnumType>;
 
     static_assert(
-        !std::is_pointer<ValueType>::value, "Please do not use raw pointers as expected value, "
-                                            "use smart pointers instead. See CppCoreGuidelines for explanation. "
-                                            "https://github.com/isocpp/CppCoreGuidelines/blob/master/"
-                                            "CppCoreGuidelines.md#Rf-unique_ptr");
-    static_assert(!std::is_reference<ValueType>::value, "Expected does not support reference as a value type");
-    static_assert(std::is_enum<ErrorCodeEnumType>::value, "ErrorCodeEnumType template parameter must be enum");
+        !std::is_pointer<ValueType>::value,
+        "Please do not use raw pointers as expected value, "
+        "use smart pointers instead. See CppCoreGuidelines for explanation. "
+        "https://github.com/isocpp/CppCoreGuidelines/blob/master/"
+        "CppCoreGuidelines.md#Rf-unique_ptr");
+    static_assert(!std::is_reference<ValueType>::value,
+                  "Expected does not support reference as a value type");
+    static_assert(std::is_enum<ErrorCodeEnumType>::value,
+                  "ErrorCodeEnumType template parameter must be enum");
 
 public:
     Expected(ValueType value) : object_{std::move(value)} {}
 
     Expected(ErrorType error) : object_{std::move(error)} {}
 
-    explicit Expected(ErrorCodeEnumType code, std::string message) : object_{ErrorType(code, message)} {}
+    explicit Expected(ErrorCodeEnumType code, std::string message)
+        : object_{ErrorType(code, message)} {}
 
-    Expected()                 = delete;
+    Expected() = delete;
     Expected(ErrorBase* error) = delete;
 
-    Expected(Expected&& other) : object_(std::move(other.object_)), errorChecked_(other.errorChecked_) {
+    Expected(Expected&& other)
+        : object_(std::move(other.object_)),
+          errorChecked_(other.errorChecked_) {
         other.errorChecked_.set(true);
     }
 
@@ -104,7 +109,7 @@ public:
         if (this != &other) {
             errorChecked_.verify("Expected was not checked before assigning");
 
-            object_       = std::move(other.object_);
+            object_ = std::move(other.object_);
             errorChecked_ = other.errorChecked_;
             other.errorChecked_.set(true);
         }
@@ -134,13 +139,13 @@ public:
     ErrorType takeError() && = delete;
     ErrorType takeError() & {
         verifyIsError();
-        return std::move(boost::get<ErrorType>(object_));
+        return std::move(std::get<ErrorType>(object_));
     }
 
     const ErrorType& getError() const&& = delete;
     const ErrorType& getError() const& {
         verifyIsError();
-        return boost::get<ErrorType>(object_);
+        return std::get<ErrorType>(object_);
     }
 
     ErrorCodeEnumType getErrorCode() const&& = delete;
@@ -168,13 +173,13 @@ public:
     ValueType& get() && = delete;
     ValueType& get() & {
         verifyIsValue();
-        return boost::get<ValueType>(object_);
+        return std::get<ValueType>(object_);
     }
 
     const ValueType& get() const&& = delete;
     const ValueType& get() const& {
         verifyIsValue();
-        return boost::get<ValueType>(object_);
+        return std::get<ValueType>(object_);
     }
 
     ValueType take() && = delete;
@@ -184,7 +189,9 @@ public:
 
     template <typename ValueTypeUniversal = ValueType>
     typename std::enable_if<
-        std::is_same<typename std::decay<ValueTypeUniversal>::type, ValueType>::value, ValueType>::type
+        std::is_same<typename std::decay<ValueTypeUniversal>::type,
+                     ValueType>::value,
+        ValueType>::type
     takeOr(ValueTypeUniversal&& defaultValue) {
         if (isError()) {
             return std::forward<ValueTypeUniversal>(defaultValue);
@@ -214,17 +221,17 @@ public:
 
 private:
     inline void verifyIsError() const {
-        debug_only::verify(
-            [this]() { return object_.which() == kErrorType_; }, "Do not try to get error from Expected with value");
+        debug_only::verify([this]() { return object_.which() == kErrorType_; },
+                           "Do not try to get error from Expected with value");
     }
 
     inline void verifyIsValue() const {
-        debug_only::verify(
-            [this]() { return object_.which() == kValueType_; }, "Do not try to get value from Expected with error");
+        debug_only::verify([this]() { return object_.which() == kValueType_; },
+                           "Do not try to get value from Expected with error");
     }
 
 private:
-    boost::variant<ValueType, ErrorType> object_;
+    std::variant<ValueType, ErrorType> object_;
     enum ETypeId {
         kValueType_ = 0,
         kErrorType_ = 1,
@@ -238,7 +245,7 @@ using ExpectedShared = Expected<std::shared_ptr<ValueType>, ErrorCodeEnumType>;
 template <typename ValueType, typename ErrorCodeEnumType>
 using ExpectedUnique = Expected<std::unique_ptr<ValueType>, ErrorCodeEnumType>;
 
-using Success = boost::blank;
+using Success = struct {};
 
 template <typename ErrorCodeEnumType>
 using ExpectedSuccess = Expected<Success, ErrorCodeEnumType>;

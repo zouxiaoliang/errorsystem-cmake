@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "abi.h"
 #include "errorsystem/attribute.h"
 
 #include <memory>
@@ -17,7 +18,6 @@
 #include <string>
 #include <typeinfo>
 
-#include <boost/core/demangle.hpp>
 #include <type_traits>
 
 namespace errorsystem {
@@ -33,11 +33,14 @@ namespace {
  * to<std::string>(En::First) -> "En::First[1]"
  */
 template <typename ToType, typename FromType>
-inline typename std::enable_if<std::is_enum<FromType>::value && std::is_same<ToType, std::string>::value, ToType>::type
+inline typename std::enable_if<std::is_enum<FromType>::value &&
+                                   std::is_same<ToType, std::string>::value,
+                               ToType>::type
 to(FromType from) noexcept {
     auto str = ToType{boost::core::demangle(typeid(from).name())};
     str.append("[");
-    str.append(std::to_string(static_cast<typename std::underlying_type<FromType>::type>(from)));
+    str.append(std::to_string(
+        static_cast<typename std::underlying_type<FromType>::type>(from)));
     str.append("]");
     return str;
 }
@@ -46,10 +49,10 @@ to(FromType from) noexcept {
 class ErrorBase {
 public:
     virtual std::string getNonRecursiveMessage() const = 0;
-    virtual std::string getMessage() const             = 0;
-    virtual ~ErrorBase()                               = default;
-    ErrorBase()                                        = default;
-    ErrorBase(const ErrorBase& other)                  = default;
+    virtual std::string getMessage() const = 0;
+    virtual ~ErrorBase() = default;
+    ErrorBase() = default;
+    ErrorBase(const ErrorBase& other) = default;
 };
 
 template <typename ErrorCodeEnumType>
@@ -57,16 +60,21 @@ class Error final : public ErrorBase {
 public:
     using SelfType = Error<ErrorCodeEnumType>;
 
-    explicit Error(
-        ErrorCodeEnumType error_code, std::string message, std::unique_ptr<ErrorBase> underlying_error = nullptr)
-        : errorCode_(error_code), message_(std::move(message)), underlyingError_(std::move(underlying_error)) {}
+    explicit Error(ErrorCodeEnumType error_code,
+                   std::string message,
+                   std::unique_ptr<ErrorBase> underlying_error = nullptr)
+        : errorCode_(error_code),
+          message_(std::move(message)),
+          underlyingError_(std::move(underlying_error)) {}
 
-    explicit Error(ErrorCodeEnumType error_code, std::unique_ptr<ErrorBase> underlying_error = nullptr)
-        : errorCode_(error_code), underlyingError_(std::move(underlying_error)) {}
+    explicit Error(ErrorCodeEnumType error_code,
+                   std::unique_ptr<ErrorBase> underlying_error = nullptr)
+        : errorCode_(error_code),
+          underlyingError_(std::move(underlying_error)) {}
 
     virtual ~Error() = default;
 
-    Error(Error&& other)      = default;
+    Error(Error&& other) = default;
     Error(const Error& other) = delete;
 
     Error& operator=(Error&& other) = default;
@@ -109,8 +117,8 @@ public:
     }
 
 private:
-    ErrorCodeEnumType          errorCode_;
-    std::string                message_;
+    ErrorCodeEnumType errorCode_;
+    std::string message_;
     std::unique_ptr<ErrorBase> underlyingError_;
 };
 
@@ -145,20 +153,25 @@ inline std::ostream& operator<<(std::ostream& out, const ErrorBase& error) {
 }
 
 template <typename ErrorCodeEnumType, typename OtherErrorCodeEnumType>
-ERRORSYSTEM_NODISCARD Error<ErrorCodeEnumType>
-                      createError(ErrorCodeEnumType error_code, Error<OtherErrorCodeEnumType> underlying_error) {
+ERRORSYSTEM_NODISCARD Error<ErrorCodeEnumType> createError(
+    ErrorCodeEnumType error_code,
+    Error<OtherErrorCodeEnumType> underlying_error) {
     return Error<ErrorCodeEnumType>(
-        error_code, std::make_unique<Error<OtherErrorCodeEnumType>>(std::move(underlying_error)));
+        error_code,
+        std::make_unique<Error<OtherErrorCodeEnumType>>(
+            std::move(underlying_error)));
 }
 
 template <typename ErrorCodeEnumType>
-ERRORSYSTEM_NODISCARD Error<ErrorCodeEnumType> createError(ErrorCodeEnumType error_code) {
+ERRORSYSTEM_NODISCARD Error<ErrorCodeEnumType> createError(
+    ErrorCodeEnumType error_code) {
     return Error<ErrorCodeEnumType>(error_code);
 }
 
-template <
-    typename ErrorType, typename ValueType,
-    typename = typename std::enable_if<std::is_base_of<ErrorBase, ErrorType>::value>::type>
+template <typename ErrorType,
+          typename ValueType,
+          typename = typename std::enable_if<
+              std::is_base_of<ErrorBase, ErrorType>::value>::type>
 inline ErrorType operator<<(ErrorType&& error, const ValueType& value) {
     std::ostringstream ostr{};
     ostr << value;

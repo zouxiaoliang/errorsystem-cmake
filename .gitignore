@@ -1,3 +1,8 @@
 .sync
-Icon
+Icon
+
 *.user*
+
+build
+.vscode
+.cache

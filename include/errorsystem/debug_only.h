@@ -14,11 +14,13 @@
 #include <iostream>
 #endif
 
-#include <boost/core/ignore_unused.hpp>
-
 namespace errorsystem {
 namespace debug_only {
 
+namespace {
+template <typename... Ts>
+constexpr void ignore_unused(Ts&&...) {}
+} // namespace
 /**
  * Use it for unconditional abort with message only in debug mode
  */
@@ -27,7 +29,7 @@ inline void fail(const char* msg) {
     std::cerr << "Failure in debug mode: \"" << msg << "\"\n";
     assert(false && "Failure in debug mode");
 #endif
-    boost::ignore_unused(msg);
+    ignore_unused(msg);
 }
 
 /**
@@ -41,8 +43,8 @@ inline void verify(FunctionType checker, const char* msg) {
         fail(msg);
     }
 #endif
-    boost::ignore_unused(checker);
-    boost::ignore_unused(msg);
+    ignore_unused(checker);
+    ignore_unused(msg);
 }
 
 /**
@@ -54,8 +56,8 @@ inline void verifyTrue(bool expected_true, const char* msg) {
         fail(msg);
     }
 #endif
-    boost::ignore_unused(expected_true);
-    boost::ignore_unused(msg);
+    ignore_unused(expected_true);
+    ignore_unused(msg);
 }
 
 /**
@@ -81,7 +83,7 @@ public:
         : value_(std::move(value))
 #endif
     {
-        boost::ignore_unused(value);
+        ignore_unused(value);
     }
 
     inline void verify(const char* msg) const {
@@ -90,7 +92,7 @@ public:
             fail(msg);
         }
 #endif
-        boost::ignore_unused(msg);
+        ignore_unused(msg);
     }
 
     template <typename FunctionType>
@@ -100,8 +102,8 @@ public:
             fail(msg);
         }
 #endif
-        boost::ignore_unused(checker);
-        boost::ignore_unused(msg);
+        ignore_unused(checker);
+        ignore_unused(msg);
     }
 
     inline void verifyEqual(const VarType& other, const char* msg) const {
@@ -110,15 +112,15 @@ public:
             fail(msg);
         }
 #endif
-        boost::ignore_unused(other);
-        boost::ignore_unused(msg);
+        ignore_unused(other);
+        ignore_unused(msg);
     }
 
     inline void set(const VarType& newValue) const {
 #ifndef NDEBUG
         value_ = newValue;
 #endif
-        boost::ignore_unused(newValue);
+        ignore_unused(newValue);
     }
 
     template <typename FunctionType>
@@ -126,7 +128,7 @@ public:
 #ifndef NDEBUG
         value_ = modifier(value_);
 #endif
-        boost::ignore_unused(modifier);
+        ignore_unused(modifier);
     }
 
 #ifndef NDEBUG
